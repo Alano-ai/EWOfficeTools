@@ -1,0 +1,97 @@
+{
+  "name": "ewofficetools",
+  "version": "1.0.0",
+  "description": "文档格式转换、合并与拆分一体化桌面工具",
+  "main": "src/main/main.js",
+  "author": "EW Office Tools",
+  "license": "MIT",
+  "homepage": "https://github.com/YOUR_USERNAME/EWOfficeTools#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/EWOfficeTools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/EWOfficeTools/issues"
+  },
+  "keywords": [
+    "office",
+    "pdf",
+    "word",
+    "excel",
+    "powerpoint",
+    "converter",
+    "merge",
+    "split",
+    "electron"
+  ],
+  "scripts": {
+    "start": "webpack serve --mode development",
+    "dev": "start npm start && timeout /t 3 && npm run electron-dev",
+    "build": "webpack --mode production",
+    "electron": "electron .",
+    "electron-dev": "cross-env NODE_ENV=development electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "build": {
+    "appId": "com.ewofficetools.app",
+    "productName": "EW Office Tools",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "src/main/**/*",
+      "src/utils/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/preset-env": "^8.0.2",
+    "@babel/preset-react": "^8.0.1",
+    "babel-loader": "^10.1.1",
+    "cross-env": "^10.1.0",
+    "css-loader": "^7.1.4",
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3",
+    "html-webpack-plugin": "^5.6.7",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.108.1",
+    "webpack-cli": "^7.1.0",
+    "webpack-dev-server": "^5.2.5"
+  },
+  "dependencies": {
+    "docx": "^9.7.1",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.12.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.0.227",
+    "pptxgenjs": "^4.0.1",
+    "puppeteer": "^25.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tesseract.js": "^7.0.0",
+    "xlsx": "^0.18.5"
+  }
+}
