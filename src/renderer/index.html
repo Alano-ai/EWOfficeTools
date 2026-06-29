@@ -3,10 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 允许 file:// 协议下的脚本执行 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' file: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' file:; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:">
   <title>EW Office Tools</title>
 </head>
 <body>
   <div id="root"></div>
-  <script src="bundle.js"></script>
+  <script>
+    // 捕获并显示错误，防止白屏
+    window.addEventListener('error', function(event) {
+      console.error('页面错误:', event.error);
+      var root = document.getElementById('root');
+      if (root && !root.hasChildNodes()) {
+        root.innerHTML = '<div style="padding:20px;font-family:sans-serif;color:red;white-space:pre-wrap;">' +
+          '<h2>应用加载错误</h2>' +
+          '<p>错误信息: ' + (event.message || '未知错误') + '</p>' +
+          '<p>文件: ' + (event.filename || '未知') + '</p>' +
+          '<p>行号: ' + (event.lineno || '未知') + '</p>' +
+          '<hr>' +
+          '<p style="font-size:12px;color:#666;">请尝试以下步骤:</p>' +
+          '<ol style="font-size:12px;color:#666;">' +
+          '<li>按 F12 打开开发者工具查看详细错误</li>' +
+          '<li>确保所有依赖已正确安装 (npm install)</li>' +
+          '<li>尝试重新构建 (npm run build)</li>' +
+          '</ol></div>';
+      }
+    });
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('未处理的 Promise 错误:', event.reason);
+    });
+  </script>
 </body>
 </html>

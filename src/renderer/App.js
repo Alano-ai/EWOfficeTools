@@ -193,22 +193,30 @@ const App = () => {
 
   const handleDownload = async (result) => {
     if (window.electronAPI) {
-      const savePath = await window.electronAPI.saveFile({
-        defaultPath: result.name,
-        filters: [{ name: '所有文件', extensions: ['*'] }]
-      });
-      if (savePath) {
-        // 调用主进程保存文件
-        console.log('Save to:', savePath);
+      try {
+        const response = await window.electronAPI.downloadFile(result.path, result.name);
+        if (response.success) {
+          console.log('文件已保存到:', response.filePath);
+        } else if (response.error !== '用户取消保存') {
+          setError('下载失败: ' + response.error);
+        }
+      } catch (err) {
+        setError('下载失败: ' + err.message);
       }
     }
   };
 
   const handleDownloadAll = async () => {
-    if (window.electronAPI) {
-      const dir = await window.electronAPI.selectDirectory();
-      if (dir) {
-        console.log('Save all to:', dir);
+    if (window.electronAPI && results.length > 0) {
+      try {
+        const response = await window.electronAPI.downloadAll(results);
+        if (response.success) {
+          console.log('所有文件已保存到:', response.directory);
+        } else if (response.error !== '用户取消选择') {
+          setError('批量下载失败: ' + response.error);
+        }
+      } catch (err) {
+        setError('批量下载失败: ' + err.message);
       }
     }
   };

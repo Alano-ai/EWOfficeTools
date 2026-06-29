@@ -145,6 +145,22 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
+// 显示错误页面的辅助函数
+function showErrorPage(window, attemptedPath, errorMsg) {
+  const errorHtml = `
+    <html>
+      <body style="font-family: sans-serif; padding: 40px; text-align: center;">
+        <h1>加载失败</h1>
+        <p>找不到应用文件，请确保应用正确安装。</p>
+        <p style="color: #666; font-size: 12px;">尝试的路径:</p>
+        <p style="color: #666; font-size: 12px;">${attemptedPath}</p>
+        <p style="color: #cc0000; font-size: 12px;">错误: ${errorMsg}</p>
+      </body>
+    </html>
+  `;
+  window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
+}
+
 function createWindow() {
   // 创建中文菜单
   createMenu();
@@ -160,8 +176,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
-    minWidth: 1450,
-    minHeight: 700,
+    minWidth: 900,
+    minHeight: 600,
     backgroundColor: backgroundColor,
     show: false,
     frame: true,
@@ -214,48 +230,34 @@ function createWindow() {
     setTimeout(tryLoadDevURL, 2000);
   } else {
     // 生产模式：加载打包后的文件
-    // 计算正确的路径，考虑打包后的文件结构
-    const appPath = app.getAppPath();
-    const indexPath = path.join(appPath, 'dist', 'index.html');
-    console.log('应用路径:', appPath);
-    console.log('加载生产模式文件:', indexPath);
-    
-    // 检查文件是否存在
     const fs = require('fs');
+    
+    // 获取应用根目录
+    const appPath = app.getAppPath();
+    console.log('尝试加载生产模式文件...');
+    console.log('app.getAppPath():', appPath);
+    console.log('__dirname:', __dirname);
+    
+    // 构建 index.html 的路径
+    const indexPath = path.join(appPath, 'dist', 'index.html');
+    console.log('目标文件路径:', indexPath);
+    
     if (fs.existsSync(indexPath)) {
-      console.log('文件存在，开始加载');
+      console.log('文件存在，开始加载:', indexPath);
+      
+      // 使用 loadFile 加载本地文件，它会自动处理路径和中文字符
       mainWindow.loadFile(indexPath)
         .then(() => {
           console.log('成功加载生产模式文件');
         })
         .catch((err) => {
-          console.error('加载生产模式文件失败:', err);
+          console.error('loadFile 失败:', err);
           // 显示错误页面
-          mainWindow.loadURL(`data:text/html,<h1>加载失败</h1><p>${err.message}</p>`);
+          showErrorPage(mainWindow, indexPath, err.message);
         });
     } else {
       console.error('文件不存在:', indexPath);
-      // 尝试其他可能的路径
-      const altPaths = [
-        path.join(__dirname, '../../dist/index.html'),
-        path.join(__dirname, '../dist/index.html'),
-        path.join(__dirname, 'dist/index.html')
-      ];
-      
-      let found = false;
-      for (const altPath of altPaths) {
-        if (fs.existsSync(altPath)) {
-          console.log('找到文件:', altPath);
-          mainWindow.loadFile(altPath);
-          found = true;
-          break;
-        }
-      }
-      
-      if (!found) {
-        console.error('所有路径都找不到文件');
-        mainWindow.loadURL(`data:text/html,<h1>文件未找到</h1><p>请确保已运行 npm run build</p>`);
-      }
+      showErrorPage(mainWindow, indexPath, '文件不存在');
     }
   }
 
@@ -331,6 +333,80 @@ ipcMain.handle('process-files', async (event, operation, files, options) => {
     return { success: true, results };
   } catch (error) {
     mainWindow.webContents.send('error-occurred', { message: error.message });
+    return { success: false, error: error.message };
+  }
+});
+
+// 文件下载IPC通信 - 单个文件下载
+ipcMain.handle('download-file', async (event, { sourcePath, defaultName }) => {
+  try {
+    // 显示保存对话框
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: '保存文件',
+      defaultPath: defaultName || path.basename(sourcePath),
+      filters: [{ name: '所有文件', extensions: ['*'] }]
+    });
+    
+    if (result.canceled) {
+      return { success: false, error: '用户取消保存' };
+    }
+    
+    // 复制文件到目标路径
+    fs.copyFileSync(sourcePath, result.filePath);
+    
+    return { success: true, filePath: result.filePath };
+  } catch (error) {
+    console.error('文件下载失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 批量下载IPC通信
+ipcMain.handle('download-all', async (event, { files }) => {
+  try {
+    // 显示目录选择对话框
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: '选择保存目录',
+      properties: ['openDirectory']
+    });
+    
+    if (result.canceled || !result.filePaths[0]) {
+      return { success: false, error: '用户取消选择' };
+    }
+    
+    const targetDir = result.filePaths[0];
+    const copiedFiles = [];
+    
+    // 复制所有文件
+    for (const file of files) {
+      const targetPath = path.join(targetDir, file.name);
+      fs.copyFileSync(file.path, targetPath);
+      copiedFiles.push(targetPath);
+    }
+    
+    return { success: true, files: copiedFiles, directory: targetDir };
+  } catch (error) {
+    console.error('批量下载失败:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 获取文件信息IPC通信
+ipcMain.handle('get-file-info', async (event, filePath) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: '文件不存在' };
+    }
+    
+    const stats = fs.statSync(filePath);
+    return {
+      success: true,
+      size: stats.size,
+      name: path.basename(filePath),
+      ext: path.extname(filePath).slice(1).toLowerCase()
+    };
+  } catch (error) {
+    console.error('获取文件信息失败:', error);
     return { success: false, error: error.message };
   }
 });

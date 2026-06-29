@@ -57,13 +57,27 @@ const FileSelector = ({
         ]
       });
       if (filePaths && filePaths.length > 0) {
-        // 将路径转换为文件对象（简化版本）
-        const fileObjects = filePaths.map(path => ({
-          name: path.split('\\').pop(),
-          path: path,
-          size: 0, // 实际应用中需要获取文件大小
-          type: path.split('.').pop()
-        }));
+        // 获取每个文件的详细信息
+        const fileObjects = await Promise.all(
+          filePaths.map(async (filePath) => {
+            try {
+              const fileInfo = await window.electronAPI.getFileInfo(filePath);
+              return {
+                name: fileInfo.success ? fileInfo.name : filePath.split('\\').pop(),
+                path: filePath,
+                size: fileInfo.success ? fileInfo.size : 0,
+                type: fileInfo.success ? fileInfo.ext : filePath.split('.').pop()
+              };
+            } catch (err) {
+              return {
+                name: filePath.split('\\').pop(),
+                path: filePath,
+                size: 0,
+                type: filePath.split('.').pop()
+              };
+            }
+          })
+        );
         onFilesSelected(fileObjects);
       }
     }
