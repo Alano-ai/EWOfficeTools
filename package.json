@@ -1,11 +1,11 @@
 {
   "name": "ewofficetools",
-  "version": "1.0.1"
+  "version": "1.0.1",
   "description": "文档格式转换、合并与拆分一体化桌面工具",
   "main": "src/main/main.js",
   "author": "EW Office Tools",
   "license": "MIT",
-  "homepage": "https://github.com/Alano-ai/EWOfficeTools#readme"
+  "homepage": "https://github.com/Alano-ai/EWOfficeTools#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/Alano-ai/EWOfficeTools.git"
